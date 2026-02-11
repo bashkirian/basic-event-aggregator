@@ -18,8 +18,24 @@ type Server struct {
 }
 
 func NewServer(port string) *Server {
-	// Инициализация компонентов (как в main.go)
-	store := storage.NewInMemoryStorage()
+	return NewServerWithStorage(port, nil)
+}
+
+func NewServerWithStorage(port string, redisAddr string) *Server {
+	return NewServerWithRedisConfig(port, redisAddr, "", 0)
+}
+
+func NewServerWithRedisConfig(port, redisAddr, redisPassword string, redisDB int) *Server {
+	var store storage.Storage
+	
+	if redisAddr != "" {
+		// Используем Redis хранилище
+		store = storage.NewRedisStorage(redisAddr, redisPassword, redisDB)
+	} else {
+		// Используем in-memory хранилище по умолчанию
+		store = storage.NewInMemoryStorage()
+	}
+	
 	agg := aggregator.New(store, 1000)
 	h := handler.New(agg)
 

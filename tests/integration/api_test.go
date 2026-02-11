@@ -86,6 +86,12 @@ func TestEventAggregationFlow(t *testing.T) {
 }
 
 func TestHealthCheck(t *testing.T) {
+	srv := server.NewServer("8080")
+	go func() {
+		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
+			t.Errorf("Server failed: %v", err)
+		}
+	}()
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get(serverURL + "/health")
 	if err != nil {
@@ -103,5 +109,12 @@ func TestHealthCheck(t *testing.T) {
 
 	if health["status"] != "ok" {
 		t.Errorf("Health status is '%s', expected 'ok'", health["status"])
+	}
+
+	// Останавливаем сервер после теста
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		t.Errorf("Shutdown failed: %v", err)
 	}
 }
